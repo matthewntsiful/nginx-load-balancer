@@ -1,5 +1,28 @@
 # NGINX Load Balancer Implementation on AWS
 
+![Project Status](https://img.shields.io/badge/status-completed-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![NGINX](https://img.shields.io/badge/nginx-1.18%2B-009639)
+![AWS](https://img.shields.io/badge/AWS-EC2-FF9900)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-20.04-E95420)
+![Bash](https://img.shields.io/badge/Bash-Script-4EAA25)
+
+## Table of Contents
+- [Project Overview](#project-overview)
+- [System Architecture](#system-architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Start Guide](#quick-start-guide)
+- [Implementation Steps](#implementation-steps)
+- [Load Balancing Methods Tested](#load-balancing-methods-tested)
+- [Testing and Verification](#testing-and-verification)
+- [Key Configuration Elements Explained](#key-configuration-elements-explained)
+- [Troubleshooting](#troubleshooting)
+- [Conclusion](#conclusion)
+- [Future Improvements](#future-improvements)
+- [Project Files and Directory Structure](#project-files-and-directory-structure)
+- [License](#license)
+- [Contact](#contact)
+
 ## Project Overview
 
 This project demonstrates the implementation of NGINX as a load balancer on AWS to distribute traffic across multiple backend web servers. The setup consists of one master server acting as the load balancer and three backend servers handling web requests. This architecture provides high availability, improved performance through load distribution, and fault tolerance.
@@ -24,6 +47,22 @@ This project demonstrates the implementation of NGINX as a load balancer on AWS 
 ```
 
 ![Load Balancer Architecture](./imgs/architecture/load-balancer-architecture.png)
+
+## Prerequisites
+
+- AWS account with permissions to create EC2 instances
+- Basic knowledge of NGINX configuration
+- SSH client for connecting to EC2 instances
+- Understanding of network security concepts
+
+## Quick Start Guide
+
+1. Launch 4 EC2 instances (Ubuntu recommended)
+2. Configure security groups as described in section 3
+3. Apply the user-data script to backend servers during launch
+4. SSH into the master server and install NGINX
+5. Create the load balancer configuration file
+6. Test the setup using the commands in the Testing section
 
 ## Implementation Steps
 
@@ -186,7 +225,7 @@ Each backend server was individually tested to confirm proper operation before i
 1. Direct access to each backend server was verified by accessing their public IP addresses
 2. After confirming functionality, security groups were modified to restrict direct access
 
-![Individual Backend Test](./imgs/testing/backend-server-direct-access/)
+![Individual Backend Test](./imgs/testing/backend-server-direct-access/Screenshot%202025-04-08%20at%2022.01.09.png)
 
 ### 5. Load Balancer Configuration
 
@@ -273,10 +312,10 @@ server {
 # - Optimizes for HTTP/1.1 with keepalive connections
 ```
 
-This configuration was saved at `/etc/nginx/sites-available/load-balancer` and enabled with:
+This configuration was saved at `/etc/nginx/sites-available/nginx-load-balancer.conf` and enabled with:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/load-balancer /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/nginx-load-balancer.conf /etc/nginx/sites-enabled/
 sudo nginx -t  # Test the configuration
 sudo systemctl reload nginx  # Apply the configuration
 ```
@@ -299,7 +338,6 @@ upstream backend_servers {
 }
 ```
 
-
 ### 2. Least Connections
 
 Directs traffic to the server with the fewest active connections, useful when request processing times vary.
@@ -314,7 +352,6 @@ upstream backend_servers {
     keepalive 32;
 }
 ```
-
 
 ### 3. IP Hash
 
@@ -345,7 +382,6 @@ upstream backend_servers {
 }
 ```
 
-
 ## Testing and Verification
 
 ### Individual Backend Server Testing
@@ -355,7 +391,7 @@ Initial testing of each backend server was performed to ensure they were properl
 - Each server was accessed directly via its IP address
 - The custom HTML page confirmed the server identity by displaying its hostname and IP
 
-![Backend Server Direct Access](./imgs/testing/backend-direct-test/)
+![Backend Server Direct Access](./imgs/testing/backend-server-direct-access/Screenshot%202025-04-08%20at%2022.01.22.png)
 
 ### Security Group Validation
 
@@ -364,19 +400,19 @@ After adjusting security groups to restrict direct access to backend servers:
 - Direct access attempts to backend servers failed as expected
 - Access through the load balancer remained functional
 
-![Security Group Testing](./imgs/testing/security-group-test/)
+![Security Group Testing](./imgs/testing/security-group-test/Screenshot%202025-04-08%20at%2022.02.05.png)
 
 ### Load Balancer Testing
 
 The load balancer was tested by sending multiple requests and verifying distribution to backend servers:
 
 ```bash
-for i in {1..20}; do curl -s http://<load-balancer-ip> | grep "Backend Server"; done
+for i in {1..20}; do curl -s http://<load-balancer-ip> | grep "Instance ID"; done
 ```
 
 This confirmed that requests were being properly distributed according to the configured load balancing method.
 
-![Load Balancer Testing](./imgs/testing/load-balancer-test/)
+![Load Balancer Testing](./imgs/testing/load-balancer-test/Screenshot%202025-04-09%20at%2009.02.28.png)
 
 ## Key Configuration Elements Explained
 
@@ -412,7 +448,15 @@ location /health {
 }
 ```
 
+## Troubleshooting
 
+Common issues and their solutions:
+
+- **Backend servers not receiving traffic**: Check security group rules and NGINX configuration
+- **NGINX configuration test fails**: Verify syntax in the configuration file
+- **Load balancer not distributing traffic as expected**: Confirm the chosen load balancing method is properly configured
+- **Connection timeouts**: Check network connectivity between load balancer and backend servers
+- **HTTP 502 Bad Gateway errors**: Ensure backend servers are running and accessible from the load balancer
 
 ## Conclusion
 
@@ -450,17 +494,32 @@ All project files and documentation are available in the repository with the fol
 │   │   ├── ec2-instances.png
 │   │   └── security-groups.png
 │   └── testing/                  # Testing screenshots
-│       ├── backend-direct-test.png
-│       ├── security-group-test.png
-│       └── load-balancer-test.png
+│       ├── backend-server-direct-access/
+│       │   ├── Screenshot 2025-04-08 at 22.01.09.png
+│       │   ├── Screenshot 2025-04-08 at 22.01.22.png
+│       │   └── Screenshot 2025-04-08 at 22.01.43.png
+│       ├── security-group-test/
+│       │   ├── Screenshot 2025-04-08 at 22.01.56.png
+│       │   ├── Screenshot 2025-04-08 at 22.02.05.png
+│       │   └── Screenshot 2025-04-08 at 22.02.17.png
+│       └── load-balancer-test/
+│           ├── Screenshot 2025-04-09 at 09.02.15.png
+│           ├── Screenshot 2025-04-09 at 09.02.28.png
+│           └── Screenshot 2025-04-09 at 09.03.37.png
 ├── configs/
-│   └── load-balancer.conf        # NGINX load balancer configuration file
+│   └── nginx-load-balancer.conf  # NGINX load balancer configuration file
 └── scripts/
-    └── backend-setup.sh          # User data script for backend servers
+    └── user-data-nginx-setup.sh  # User data script for backend servers
 ```
 
 All project screenshots are available in the [imgs directory](https://github.com/yourusername/nginx-load-balancer/tree/main/imgs).
 
 The complete configuration files can be found in the [configs directory](https://github.com/yourusername/nginx-load-balancer/tree/main/configs).
 
-For detailed setup instructions and explanations, refer to the sections above or visit the nginx-load-balancer-aws(https://github.com/matthewntsiful/nginx-load-balancer).
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For questions or feedback about this project, please [open an issue](https://github.com/matthewntsiful/nginx-load-balancer/issues) or contact [matthew.ntsiful@gmail.com].
